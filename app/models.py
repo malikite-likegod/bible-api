@@ -1,16 +1,24 @@
 from .database import Base
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint, DateTime, Text, Enum, Foreign
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint, DateTime, Text, Enum
 from sqlalchemy.sql.sqltypes import TABLEVALUE, TIMESTAMP
 from sqlalchemy.sql.expression import text, func
 from sqlalchemy.orm import relationship
 import enum
 
 
-class PrivilegeLevel(str, enum.Enum):
+class PrivilegeLevel(enum.Enum):
     admin = "admin"
     moderator = "moderator"
     contributor = "contributor"
     user = "user"
+
+PrivilegeLevelType: Enum = Enum(
+    PrivilegeLevel,
+    name="privilegeLevel",
+    create_constraint=True,
+    metadata=Base.metadata,
+    validate_strings=True,
+)
 
 
 class User(Base):
@@ -26,7 +34,7 @@ class User(Base):
     location = Column(String, nullable=True)
     relationship_status = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
-    privilege_level = Column(Enum(PrivilegeLevel), default=PrivilegeLevel.user)
+    privilege_level = Column(Enum(PrivilegeLevel), unique=False, nullable=False)
 
     followers = relationship("Follow", back_populates="followed", foreign_keys="[Follow.followed_id]")
     following = relationship("Follow", back_populates="follower", foreign_keys="[Follow.follower_id]")
@@ -129,6 +137,17 @@ class Chapter(Base):
     book = relationship("Book")
 
     UniqueConstraint("book_id", "number", name="unique_chapter")
+
+class ChapterNote(Base):
+
+    __tablename__ = "chapter_notes"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    note_text = Column(String, nullable=False)
+    chapter_id = Column(Integer, ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    UniqueConstraint("user_id", "chapter_id", name="unique_chapter_note")
 
 
 class Verse(Base):
@@ -266,7 +285,7 @@ class Thread(Base):
     author = relationship("User")
 
 class ForumPost(Base):
-    __tablename__ = "forum_posts"
+    __tablename__ = "forumposts"
     id = Column(Integer, primary_key=True, index=True)
     content = Column(Text)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
@@ -282,8 +301,20 @@ class Comment(Base):
     id = Column(Integer, primary_key=True, index=True)
     content = Column(Text)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
-    forum_post_id = Column(Integer, ForeignKey("forumposts.id"))
+    forumpost_id = Column(Integer, ForeignKey("forumposts.id"))
     author_id = Column(Integer, ForeignKey("users.id"))
 
-    post = relationship("ForumPost", back_populates="comments")
+    forumpost = relationship("ForumPost", back_populates="comments")
     author = relationship("User")
+
+
+    ###### Article tables
+
+    class Document(Base):
+        __tablename__ = "documents"
+        id = Column(Integer, primary_key=True, index=True)
+        title = Column(String, nullable=False)
+        created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+        content = Column(Text)  # HTML content stored as text
+        published = Column(Boolean, default=False)
+        user_id = Column(Integer, ForeignKey("users.id"))

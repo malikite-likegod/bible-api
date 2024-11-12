@@ -6,7 +6,7 @@ import time
 from ..database import get_db
 
 router = APIRouter(
-    prefix="/viwer",
+    prefix="/viewer",
     tags=['Viewer']
 )
 

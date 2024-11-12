@@ -18,6 +18,8 @@ class UserOut(BaseModel):
     first_name: str
     last_name: str
     created_at: datetime
+    privilege_level: PrivilegeLevel
+
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -151,3 +153,15 @@ class PostCreate(BaseModel):
 class CommentCreate(BaseModel):
     content: str
     post_id: int
+
+
+class DocumentCreate(BaseModel):
+    title: str
+    user_id: int
+    content: str  # Accept HTML content
+
+class DocumentResponse(BaseModel):
+    id: int
+    title: str
+    user_id: int
+    content: str
